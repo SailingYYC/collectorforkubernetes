@@ -151,7 +151,7 @@ The table below is only applicable if `pipe.join.kube-apiserver.disabled` is `fa
 | `pipe.join.kube-apiserver.matchRegex`   | Regex to determine logs to apply to               | `{kubernetes_container_image: ^gcr.io/google_containers/kube-apiserver-.*$, docker_stream: stderr}` |
 | `pipe.join.kube-apiserver.patternRegex` | Regex to determine a new event                    | ^[IWEF]\d{4}\s\d{2}:\d{2}:\d{2}.\d{6}\s           |
 
-The table below shows how to define a custom join rule for a container called `my_app`, where all log file events start from '[<digits>'. For more information, see [Join Rules](https://www.outcoldsolutions.com/docs/collectorforkubernetes/#join-rules).
+The table below shows how to define a custom join rule for a container called `my_app`, where all log file events start from `[<digits>`. For more information, see [Join Rules](https://www.outcoldsolutions.com/docs/collectorforkubernetes/#join-rules).
 
 | Parameter                             | Description                                       | Default                                                       |
 |---------------------------------------|---------------------------------------------------|---------------------------------------------------------------|
