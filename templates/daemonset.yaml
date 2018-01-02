@@ -1,0 +1,107 @@
+{{- if and .Values.output.splunk.url .Values.output.splunk.token }}
+{{- $monitoringPort := default "" .Values.general.httpServerBinding | trimAll ":" -}}
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: {{ template "collectorforkubernetes.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  name: {{ template "collectorforkubernetes.fullname" . }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ template "collectorforkubernetes.name" . }}
+        release: {{ .Release.Name }}
+      # Ensure the Pod is recreated when the configuration is changed.
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          # This way we set Kubernetes Node name to be able to filter out
+          # Only pods from current pod.
+          env:
+            - name: KUBERNETES_NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          {{- if $monitoringPort }}
+          ports:
+            - containerPort: {{ $monitoringPort }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ $monitoringPort }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ $monitoringPort }}
+          {{- end }}
+          {{- if .Values.securityContext }}
+          securityContext:
+{{ toYaml .Values.securityContext | indent 12 }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+          # Where we store state (file positions)
+          - name: {{ template "collectorforkubernetes.name" . }}-state
+            mountPath: {{ .Values.general.dataPath }}
+          # Configuration file deployed with ConfigMap
+          - name: {{ template "collectorforkubernetes.name" . }}-config
+            mountPath: /config/
+            readOnly: true
+          # Cgroup filesystem to get metrics
+          - name: cgroup
+            mountPath: {{ .Values.input.system_stats.pathCgroups }}
+            readOnly: true
+          # Proc filesystem to get metrics
+          - name: proc
+            mountPath: {{ coalesce .Values.input.system_stats.pathProc .Values.input.proc_stats.pathProc }}
+            readOnly: true
+          # Docker logs (JSON files)
+          - name: docker-logs
+            mountPath: {{ .Values.input.files.path }}
+            readOnly: true
+          - name: logs
+            mountPath: {{ .Values.input.files.syslog.path }}
+            readOnly: true
+      volumes:
+      # We store state directly on host, change this location, if
+      # your persistent volume is somewhere else
+      - name: {{ template "collectorforkubernetes.name" . }}-state
+        hostPath:
+          path: /var/lib/{{ template "collectorforkubernetes.name" . }}/data/
+      # Location of docker logs
+      - name: docker-logs
+        hostPath:
+          path: /var/lib/docker/containers/
+      # Location of cgroups file system
+      - name: cgroup
+        hostPath:
+          path: /sys/fs/cgroup
+      # Location of proc file system
+      - name: proc
+        hostPath:
+          path: /proc
+      # Host logs location
+      - name: logs
+        hostPath:
+          path: /var/log
+      # configuration from ConfigMap
+      - name: {{ template "collectorforkubernetes.name" . }}-config
+        configMap:
+          name: {{ template "collectorforkubernetes.fullname" . }}
+      serviceAccountName: {{ if .Values.rbac.create }}{{ template "collectorforkubernetes.fullname" . }}{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+{{- if and (eq .Capabilities.KubeVersion.Major "1") (gt .Capabilities.KubeVersion.Minor "5") }}
+  updateStrategy:
+    type: {{ .Values.updateStrategy }}
+{{- end }}
+{{- end }}

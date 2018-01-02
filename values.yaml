@@ -1,0 +1,277 @@
+# Default values for collectorforkubernetes.
+# This is a YAML-formatted file.
+
+rbac:
+  ## If true, create & use RBAC resources
+  ##
+  create: false
+
+  ## Ignored if rbac.create is true
+  ##
+  serviceAccountName: default
+
+image:
+  repository: outcoldsolutions/collectorforkubernetes
+  tag: 2.0.37.171023
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: 1
+    memory: 100Mi
+  requests:
+    cpu: 100m
+    memory: 20Mi
+
+securityContext:
+  # Privileged only required to get access to IO in /proc file system.
+  # You can disable privileged and still get most of the metrics and logs.
+  #
+  # Another option can be with enabling just SYS_PTRACE, that will allow access to most
+  # processes io statistics (excluded processes running outside of containers)
+  #
+  #  capabilities:
+  #    add: ["SYS_PTRACE"]
+  #
+  # To use SYS_PTRACE capability and collect IO metrics for all processes
+  # you need to configure apparmour. See issue:
+  #   https://github.com/moby/moby/issues/21051 (how to make it work in Docker)
+  # Which requires `--security-opt apparmor:unconfined`
+  # But following kubernetes security context documentation it is not possible
+  # To set without manually creating apparmor profile
+  #   https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  #   https://kubernetes.io/docs/tutorials/clusters/apparmor/
+  # `unconfined` will be available in future Kubernetes versions
+  #   https://github.com/kubernetes/kubernetes/pull/52395
+  privileged: true
+
+## Strategy for DaemonSet updates (requires Kubernetes 1.6+)
+## Ref: https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/
+## For collector RollingUpdate is suitable when you update configuration
+##
+updateStrategy: RollingUpdate
+
+## Tolerations for the worker nodes.
+## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+tolerations:
+  - operator: "Exists"
+    effect: "NoSchedule"
+
+general:
+  # location for the database
+  # is used to store position of the files and internal state
+  dataPath: /data/
+
+  # log level (trace, debug, info, warn, error, fatal)
+  # logLevel: info
+
+  # http server gives access to two endpoints
+  # /healthz
+  # /metrics
+  httpServerBinding: :8080
+
+  # telemetry report endpoint, set it to empty string to disable telemetry
+  # telemetryEndpoint: https://license.outcold.solutions/telemetry/
+
+  # license check endpoint
+  # licenseEndpoint: https://license.outcold.solutions/license/
+
+  # license
+  # license:
+
+  # docker daemon hostname is used by default as hostname
+  # use this configuration to override
+  # hostname:
+
+  # connection to docker host
+  kubernetes: {}
+    # name of kubernetes node (required)
+    # nodeName:
+
+input:
+  # cgroup input
+  system_stats:
+    # disable system level stats
+    # disabled: false
+
+    # cgroups fs location
+    pathCgroups: /rootfs/sys/fs/cgroup
+
+    # proc location
+    pathProc: /rootfs/proc
+
+    # how often to collect cgroup stats
+    # statsInterval: 30s
+
+    # override type
+    # type: kubernetes_stats
+
+  # proc input
+  proc_stats:
+    # disable proc level stats
+    # disabled: false
+
+    # proc location
+    pathProc: /rootfs/proc
+
+    # how often to collect proc stats
+    # statsInterval: 30s
+
+    # override type
+    # type: kubernetes_proc_stats
+
+
+  # Log files
+  files:
+    # disable container logs monitoring
+    # disabled: false
+
+    # root location of docker files
+    path: /rootfs/var/lib/docker/containers/
+
+    # glob matching pattern for log files
+    # glob: "*/*-json.log*"
+
+    # files are read using polling schema, when reach the EOF how often to check if files got updated
+    # pollingInterval: 250ms
+
+    # how often to look for the new files under logs path
+    # walkingInterval: 5s
+
+    # include verbose fields in events (file offset)
+    # verboseFields: false
+
+    # override type
+    # type: kubernetes_logs
+
+
+    # Input syslog(.\d+)? files
+    syslog:
+      # disable host level logs
+      # disabled: false
+
+      # root location of docker files
+      path: /rootfs/var/log/
+
+      # regex matching pattern
+      match: ^syslog(.\d+)?$
+
+      # files are read using polling schema, when reach the EOF how often to check if files got updated
+      pollingInterval: 250ms
+
+      # how often o look for the new files under logs path
+      walkingInterval: 5s
+
+      # include verbose fields in events (file offset)
+      verboseFields: false
+
+      # override type
+      type: kubernetes_host_logs
+
+      # field extraction
+      extraction: '^(?P<timestamp>[A-Za-z]+\s\d+\s\d+:\d+:\d+)\s(?P<syslog_hostname>[^\s]+)\s(?P<syslog_component>[^:\[]+)(\[(?P<syslog_pid>\d+)\])?: (.+)$'
+
+      # timestamp field
+      timestampField: timestamp
+
+      # format for timestamp
+      # the layout defines the format by showing how the reference time, defined to be `Mon Jan 2 15:04:05 -0700 MST 2006`
+      timestampFormat: Jan 2 15:04:05
+
+      # timestamp location (if not defined by format)
+      timestampLocation: UTC
+
+    # Input all *.log(.\d+)? files
+    logs:
+      # disable host level logs
+      # disabled: false
+
+      # root location of docker files
+      path: /rootfs/var/log/
+
+      # regex matching pattern
+      match: ^[\w]+\.log(.\d+)?$
+
+      # files are read using polling schema, when reach the EOF how often to check if files got updated
+      pollingInterval: 250ms
+
+      # how often o look for the new files under logs path
+      walkingInterval: 5s
+
+      # include verbose fields in events (file offset)
+      verboseFields: false
+
+      # override type
+      type: kubernetes_host_logs
+
+      # field extraction
+      # extraction:
+
+      # timestamp field
+      # timestampField:
+
+      # format for timestamp
+      # the layout defines the format by showing how the reference time, defined to be `Mon Jan 2 15:04:05 -0700 MST 2006`
+      # timestampFormat:
+
+      # timestamp location (if not defined by format)
+      # timestampLocation:
+
+output:
+  # Splunk output
+  splunk:
+    # Splunk HTTP Event Collector url
+    url: 
+
+    # Splunk HTTP Event Collector Token
+    token: 
+
+    # Allow invalid SSL server certificate
+    # insecure: true
+
+    # Path to CA cerificate
+    # caPath:
+
+    # CA Name to verify
+    # caName:
+
+    # Events are batched with the maximum size set by batchSize and staying in pipeline for not longer
+    # than set by frequency
+    # frequency: 5s
+    # batchSize: 768K
+
+pipe:
+  # Pipe to join events (container logs only)
+  join:
+    # disable joining event
+    # disabled: false
+
+    # Maximum interval of messages in pipeline
+    # maxInterval: 100ms
+
+    # Maximum time to wait for the messages in pipeline
+    # maxWait: 1s
+
+    # Maximum message size
+    # maxSize: 100K
+
+    # Default pattern to indicate new message (should start not from space)
+    # patternRegex: ^[^\s]
+
+
+  # Kube API Server has trace messages with multi line events
+    kube-apiserver:
+      # disabled: false
+      matchRegex.kubernetes_container_image: ^gcr.io/google_containers/kube-apiserver-.*$
+      matchRegex.docker_stream: stderr
+      patternRegex: ^[IWEF]\d{4}\s\d{2}:\d{2}:\d{2}.\d{6}\s
+
+  # Define special event join patterns for matched events
+  # Section consist of [pipe.join::<name>]
+  # [pipe.join::my_app]
+  ## Set match pattern for the fields
+  #; matchRegex.docker_container_image = my_app
+  #; matchRegex.docker_stream = stdout
+  ## All events start from '[<digits>'
+  #; patternRegex = ^\[\d+
+

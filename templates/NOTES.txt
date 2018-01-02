@@ -1,0 +1,37 @@
+{{- if and .Values.output.splunk.url .Values.output.splunk.token }}
+Collector For Kubernetes agents are spinning up on each node in your cluster.
+After a few seconds, you should see data Splunk. Ensure you have installed
+Monitoring for Kubernetes as per:
+
+    {{ .Chart.Home }}
+
+{{- else -}}
+##############################################################################
+{{- if not .Values.output.splunk.url  }}
+####               ERROR: You did not set `output.splunk.url`.            ####
+{{- end }}
+{{- if not .Values.output.splunk.token  }}
+####               ERROR: You did not set `output.splunk.token`.          ####
+{{- end }}
+##############################################################################
+
+This deployment will be incomplete until you configure the items above.
+
+{{- if not .Values.output.splunk.token  }}
+Information on setting up Monitoring for Kubernetes and creating a token,
+can be found at:
+
+    {{ .Chart.Home }}
+{{- end }}
+
+Then run:
+
+    helm upgrade {{ .Release.Name }} \
+{{- if not .Values.output.splunk.url  }}
+        --set output.splunk.url=YOUR-SPLUNK-URL \
+{{- end }}
+{{- if not .Values.output.splunk.token  }}
+        --set output.splunk.token=YOUR-SPLUNK-TOKEN \
+{{- end }}
+        stable/collectorforkubernetes
+{{- end }}

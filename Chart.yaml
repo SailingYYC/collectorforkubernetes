@@ -1,0 +1,16 @@
+apiVersion: v1
+name: collectorforkubernetes
+version: 0.4.0
+appVersion: 2.0.37.171023
+description: The premier solution for monitoring your Kubernetes hosts in Splunk
+keywords:
+  - monitoring
+  - metric
+  - troubleshooting
+home: https://www.outcoldsolutions.com/docs/monitoring-kubernetes/
+icon: https://www.outcoldsolutions.com/apple-touch-icon-180x180.png
+sources:
+  - https://github.com/sailingyyc/splunk-on-kubernetes
+maintainers:
+  - name: Colin Cyr
+    email: ccyr@sailingyyc.com
