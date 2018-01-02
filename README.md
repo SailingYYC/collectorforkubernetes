@@ -142,18 +142,18 @@ The table below is only applicable if `pipe.join.disabled` is `false`.
 | `pipe.join.maxInterval`               | Maximum interval of messages in pipeline          | 100ms                                             |
 | `pipe.join.maxWait`                   | Maximum time to wait for the messages in pipeline | 1s                                                |
 | `pipe.join.maxSize`                   | Maximum message size                              | 100K                                              |
-| `pipe.join.patternRegex`              | Default pattern to indicate new message           | ^[^\s]                                            |
+| `pipe.join.patternRegex`              | Default pattern to indicate new message           | `^[^\s]`                                          |
 
 The table below is only applicable if `pipe.join.kube-apiserver.disabled` is `false`. This is a default join rule for Kubernetes' API server trace messages.
 
 | Parameter                               | Description                                       | Default                                           |
 |-----------------------------------------|---------------------------------------------------|---------------------------------------------------|
 | `pipe.join.kube-apiserver.matchRegex`   | Regex to determine logs to apply to               | `{kubernetes_container_image: ^gcr.io/google_containers/kube-apiserver-.*$, docker_stream: stderr}` |
-| `pipe.join.kube-apiserver.patternRegex` | Regex to determine a new event                    | ^[IWEF]\d{4}\s\d{2}:\d{2}:\d{2}.\d{6}\s           |
+| `pipe.join.kube-apiserver.patternRegex` | Regex to determine a new event                    | `^[IWEF]\d{4}\s\d{2}:\d{2}:\d{2}.\d{6}\s`         |
 
 The table below shows how to define a custom join rule for a container called `my_app`, where all log file events start from `[<digits>`. For more information, see [Join Rules](https://www.outcoldsolutions.com/docs/collectorforkubernetes/#join-rules).
 
 | Parameter                             | Description                                       | Default                                                       |
 |---------------------------------------|---------------------------------------------------|---------------------------------------------------------------|
 | `pipe.join.my_app.matchRegex`         | Regex to determine logs to apply to               | `{kubernetes_container_image: my_app, docker_stream: stdout}` |
-| `pipe.join.my_app.patternRegex`       | Regex to determine a new event                    | ^\[\d+                                                        |
+| `pipe.join.my_app.patternRegex`       | Regex to determine a new event                    | `^\[\d+`                                                      |
